@@ -25,6 +25,8 @@
   },
   "homepage": "https://github.com/erikdonohoo/id3-tree",
   "dependencies": {
-    "node-arff": "0.0.4"
+    "lodash": "^3.8.0",
+    "node-arff": "0.0.4",
+    "yargs": "^3.8.0"
   }
 }
