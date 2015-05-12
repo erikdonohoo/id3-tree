@@ -1,0 +1,27 @@
+{
+  "name": "id3-tree",
+  "version": "1.0.0",
+  "description": "calculate id3 from arff file format data with cross validation",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/erikdonohoo/id3-tree.git"
+  },
+  "keywords": [
+    "id3",
+    "machine",
+    "learning",
+    "ai",
+    "tree",
+    "node"
+  ],
+  "author": "Erik Donohoo <erikdonohoo@gmail.com> (http://earthtoerik.com/)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/erikdonohoo/id3-tree/issues"
+  },
+  "homepage": "https://github.com/erikdonohoo/id3-tree"
+}
