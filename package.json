@@ -23,5 +23,8 @@
   "bugs": {
     "url": "https://github.com/erikdonohoo/id3-tree/issues"
   },
-  "homepage": "https://github.com/erikdonohoo/id3-tree"
+  "homepage": "https://github.com/erikdonohoo/id3-tree",
+  "dependencies": {
+    "node-arff": "0.0.4"
+  }
 }
