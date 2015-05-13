@@ -4,11 +4,10 @@ var args = require('yargs').argv;
 
 var accuracy = false;
 var aData;
-function Tree (arffData, className, useAccuracy, crossValidateNum) {
+function Tree (arffData, className, useAccuracy) {
 	this.data = aData = arffData;
 	this.className = className;
 	this.useAccuracy = accuracy = useAccuracy;
-	this.crossValidateNum = crossValidateNum;
 
 	this.features = [];
 	for (var feature in this.data.types) {
@@ -46,6 +45,8 @@ function createTree (arffData, className, featureList) {
 	var bestAttribute;
 	if (!accuracy) {
 		bestAttribute = findMaxGain(arffData, className, featureList);
+	} else {
+		bestAttribute = findBestAccuracy(arffData, className, featureList);
 	}
 
 	var nominal = aData.types[bestAttribute].type === 'nominal';
@@ -67,7 +68,7 @@ function createTree (arffData, className, featureList) {
 					aData.types[bestAttribute].oneof[instance[bestAttribute]] === value :
 					instance[bestAttribute] === value;
 			});
-			var childNode = {name: value, type: 'attribute_value'};
+			var childNode = {name: value, type: 'attribute_value', nominal: nominal};
 			childNode.child = createTree(newDataSet, className, remainingAttributes);
 			return childNode;
 		});
@@ -80,15 +81,21 @@ function createTree (arffData, className, featureList) {
 			return item[bestAttribute] > splitPoint;
 		});
 		treeNode.vals = [];
-		var childNode = {name: '<= ' + splitPoint, type: 'attribute-value'};
+		var childNode = {name: '<= ' + splitPoint, type: 'attribute-value', nominal: nominal};
 		childNode.child = createTree(firstHalf, className, remainingAttributes);
-		var childNode2 = {name: '> ' + splitPoint, type: 'attribute-value'};
+		var childNode2 = {name: '> ' + splitPoint, type: 'attribute-value', nominal: nominal};
 		childNode2.child = createTree(secondHalf, className, remainingAttributes);
 		treeNode.vals.push(childNode);
 		treeNode.vals.push(childNode2);
 	}
 
 	return treeNode;
+}
+
+function findBestAccuracy (data, className, featureList) {
+	return _.max(featureList, function (feature) {
+		return 1;
+	});
 }
 
 function findMaxGain (data, className, featureList) {
@@ -180,17 +187,33 @@ function ratio(value, list) {
 	return totalValues / list.length;
 }
 
-function printTree(tree) {
-	console.log(tree);
-	if (tree.vals) {
-		tree.vals.forEach(function (branch) {
-			console.log('\n\nComes from ' + tree.name + ' ' + tree.type + ' ' + branch.name);
-			printTree(branch.child);
-		});
-	}
+function printTree(tree, str) {
+	str = str || '';
+
+	tree.vals.forEach(function (child) {
+		var log = str + tree.name + ' = ' + child.name;
+
+		if (child.child.type === 'result')
+			log += ': ' + child.child.val;
+
+		console.log(log);
+
+		if (child.child.type === 'attribute')
+			printTree(child.child, str + '|  ');
+	});
+
 }
 
 arff.load('iris.arff', function (err, data) {
-	var tree = new Tree(data, 'class', args.accuracy, args.cv);
+
+	// Cross validation
+	// var crossValidate = args.cv;
+	//
+	// var mixed = _.shuffle(data.data);
+	// for (var i = 0; i < crossValidate; i++) {
+	//
+	// }
+
+	var tree = new Tree(data, 'class', args.accuracy);
 	printTree(tree.root);
 });
