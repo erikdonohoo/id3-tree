@@ -18,6 +18,29 @@ function Tree (arffData, className, useAccuracy) {
 	this.root = createTree(arffData.data, className, this.features);
 }
 
+Tree.prototype.guessValue = function (attribute, nominal) {
+
+	var tree = this;
+	if (nominal) {
+		// Guess most likely value
+		var values = _.groupBy(tree.data.data, function (instance) {
+			return instance[attribute];
+		});
+
+		var index = _.max(Object.keys(values), function (attrValue) {
+			return values[attrValue].length / tree.data.data.length;
+		});
+
+		return tree.data.types[attribute].oneof[index];
+
+	} else {
+		// Calculate average value
+		return _.pluck(tree.data.data, attribute).reduce(function (prev, cur, index, arr) {
+			return prev + (cur / arr.length);
+		});
+	}
+};
+
 Tree.prototype.predict = function (sample) {
 	var node = this.root;
 	while (node.type !== 'result') {
@@ -31,6 +54,11 @@ Tree.prototype.predict = function (sample) {
 			sampleValue = this.data.types[attribute].oneof[sample[attribute]];
 		} else {
 			sampleValue = sample[attribute];
+		}
+
+		if (sampleValue === '?' || !sampleValue) {
+			// This value is missing, and we need to guess one
+			sampleValue = this.guessValue(attribute, nominal);
 		}
 
 		// Determine which child node to walk down
@@ -262,7 +290,7 @@ function printTree(tree, str) {
 
 }
 
-arff.load('iris.arff', function (err, data) {
+arff.load('voting.arff', function (err, data) {
 
 	// Cross validation
 	var crossValidate = args.cv;
@@ -278,7 +306,7 @@ arff.load('iris.arff', function (err, data) {
 
 		var testData = first.concat(end);
 		data.data = testData;
-		var tree = new Tree(data, 'class', args.accuracy);
+		var tree = new Tree(data, 'Class', args.accuracy);
 
 		// Check now
 		var acc = tree.evaluate(test);
@@ -290,4 +318,7 @@ arff.load('iris.arff', function (err, data) {
 	}, 0) / totalAcc.length;
 
 	console.log(accuracy);
+
+	// var tree = new Tree(data, 'Class', args.accuracy);
+	// printTree(tree.root);
 });
