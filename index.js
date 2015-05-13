@@ -187,6 +187,9 @@ function findBestAccuracy (data, className, featureList) {
 function findMaxGain (data, className, featureList) {
 
 	var entropyOfSet = entropy(_.pluck(data, className));
+
+	// TODO Don't choose anything if the attribute doesn't make accuracy/gain better
+	// TODO What to do if multiple attributes have same gain?
 	return _.max(featureList, function (feature) {
 
 		var nominal = aData.types[feature].type === 'nominal';
