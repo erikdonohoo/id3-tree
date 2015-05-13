@@ -18,6 +18,64 @@ function Tree (arffData, className, useAccuracy) {
 	this.root = createTree(arffData.data, className, this.features);
 }
 
+Tree.prototype.predict = function (sample) {
+	var node = this.root;
+	while (node.type !== 'result') {
+		var attribute = node.name;
+
+		// Is nominal?
+		var nominal = this.data.types[attribute].type === 'nominal';
+
+		var sampleValue;
+		if (nominal) {
+			sampleValue = this.data.types[attribute].oneof[sample[attribute]];
+		} else {
+			sampleValue = sample[attribute];
+		}
+
+		// Determine which child node to walk down
+		if (nominal) {
+			var child = _.find(node.vals, function (val) {
+				return val.name === sampleValue;
+			});
+			node = child.child;
+		} else {
+			// Get sign and value
+			var numToCompare = parseInt(node.vals[0].name.substring(2));
+
+			if (parseInt(sampleValue) <= numToCompare) {
+				node = node.vals[0].child;
+			} else {
+				node = node.vals[1].child;
+			}
+		}
+	}
+
+	return node.val;
+};
+
+Tree.prototype.evaluate = function (samples) {
+
+	var correct = 0;
+	var tree = this;
+
+	samples.forEach(function (sample) {
+		var prediction = tree.predict(sample);
+
+		var actual;
+		if (tree.data.types[tree.className].type === 'nominal') {
+			actual = tree.data.types[tree.className].oneof[sample[tree.className]];
+		} else {
+			actual = sample[tree.className];
+		}
+		if (prediction === actual) {
+			correct++;
+		}
+	});
+
+	return correct / samples.length;
+};
+
 function createTree (arffData, className, featureList) {
 
 	var classes = _.uniq(_.pluck(arffData, className));
@@ -207,13 +265,29 @@ function printTree(tree, str) {
 arff.load('iris.arff', function (err, data) {
 
 	// Cross validation
-	// var crossValidate = args.cv;
-	//
-	// var mixed = _.shuffle(data.data);
-	// for (var i = 0; i < crossValidate; i++) {
-	//
-	// }
+	var crossValidate = args.cv;
+	var split = data.data.length / crossValidate;
 
-	var tree = new Tree(data, 'class', args.accuracy);
-	printTree(tree.root);
+	var mixed = _.shuffle(data.data);
+
+	var totalAcc = [];
+	for (var i = 0; i < crossValidate; i++) {
+		var first = mixed.slice(0, i * split);
+		var test = mixed.slice(i * split, (i*split) + split);
+		var end = mixed.slice((i*split) + split, mixed.length -1);
+
+		var testData = first.concat(end);
+		data.data = testData;
+		var tree = new Tree(data, 'class', args.accuracy);
+
+		// Check now
+		var acc = tree.evaluate(test);
+		totalAcc.push(acc);
+	}
+
+	var accuracy = totalAcc.reduce(function (a, b) {
+		return a + b;
+	}, 0) / totalAcc.length;
+
+	console.log(accuracy);
 });
